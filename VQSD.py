@@ -7,7 +7,7 @@ Contains a class for VQSD circuits utilizing Cirq.
 # imports
 # =============================================================================
 
-import cirq
+import cirq, sympy
 import numpy as np
 
 # =============================================================================
@@ -152,11 +152,11 @@ class VQSD:
 
             # get the type of rotation gate
             if rtype.lower() == 'x':
-                gate = cirq.RotXGate
+                gate = cirq.rx
             elif rtype.lower() == 'y':
-                gate = cirq.RotYGate
+                gate = cirq.ry
             elif rtype.lower() == 'z':
-                gate = cirq.RotZGate
+                gate = cirq.rz
             else:
                 raise ValueError(
                     "unsupported rotation type. please enter x, y, or z"
@@ -164,7 +164,7 @@ class VQSD:
 
             # get the layer
             for ii in range(nqubits):
-                rot = gate(half_turns=angles[ii])
+                rot = gate(angles[ii])
                 yield rot(self.qubits[2 * nqubits * copy + ii])
 
         # append the rotation layers
@@ -428,9 +428,9 @@ class VQSD:
         Note that order is reversed when put into the circuit. The circuit is:
         |qubit>---Rx(params[0])---Ry(params[1])---Rz(params[2])---
         """
-        rx = cirq.RotXGate(half_turns=params[0])
-        ry = cirq.RotYGate(half_turns=params[1])
-        rz = cirq.RotZGate(half_turns=params[2])
+        rx = cirq.rx(params[0])
+        ry = cirq.ry(params[1])
+        rz = cirq.rz(params[2])
 
         yield (rx(qubit), ry(qubit), rz(qubit))
 
@@ -547,7 +547,7 @@ class VQSD:
         # of layers, as should num_angles_required_for_unitary()
         num_symbols_required = self.num_angles_required_for_unitary()
         return np.array(
-            [cirq.Symbol(ii) for ii in range(num_symbols_required)]
+            [sympy.Symbol(ii) for ii in range(num_symbols_required)]
             )
 
     def _reshape_sym_list_for_unitary(self):
@@ -642,14 +642,16 @@ class VQSD:
 
         if angles is None:
             angles = 2 * np.random.rand(12 * self._num_qubits)
-        param_resolver = cirq.ParamResolver(
-            {str(ii) : angles[ii] for ii in range(len(angles))}
-        )
+        #param_resolver = cirq.ParamResolver(
+        #    {str(ii) : angles[ii] for ii in range(len(angles))}
+        #)
 
-        return circuit.with_parameters_resolved_by(param_resolver)
+        return cirq.resolve_parameters(circuit, {str(ii) : angles[ii] for ii in range(len(angles))} )
+        #return circuit.with_parameters_resolved_by(param_resolver)
 
     def run(self,
-            simulator=cirq.google.XmonSimulator(),
+            #simulator=cirq.Simulator(),
+            simulator=cirq.Simulator(),
             repetitions=1000):
         """Runs the algorithm and returns the result.
 
@@ -659,7 +661,8 @@ class VQSD:
 
     def run_resolved(self,
                      angles,
-                     simulator=cirq.google.XmonSimulator(),
+                     #simulator=cirq.Simulator(),
+                     simulator=cirq.Simulator(),
                      repetitions=1000):
         """Runs the resolved algorithm and returns the result."""
         return simulator.run(
@@ -667,7 +670,8 @@ class VQSD:
         )
 
     def obj_dip(self,
-                simulator=cirq.google.XmonSimulator(),
+                #simulator=cirq.Simulator(),
+                simulator=cirq.Simulator(),
                 repetitions=1000):
         """Returns the objective function as computed by the DIP Test."""
         # make sure the purity is computed
@@ -684,7 +688,8 @@ class VQSD:
 
     def obj_dip_resolved(self,
                          angles,
-                         simulator=cirq.google.XmonSimulator(),
+                         #simulator=cirq.Simulator(),
+                         simulator=cirq.Simulator(),
                          repetitions=1000):
         """Returns the objective function of the resolved circuit as computed
         by the DIP Test."""
@@ -701,7 +706,8 @@ class VQSD:
         return self.purity - overlap
     
     def overlap_pdip(self,
-                     simulator=cirq.google.XmonSimulator(),
+                     #simulator=cirq.Simulator(),
+                     simulator=cirq.Simulator(),
                      repetitions=1000):
         """Returns the objective function as computed by the PDIP Test."""
         # make sure the purity is computed
@@ -756,7 +762,7 @@ class VQSD:
     
     def overlap_pdip_resolved(self,
                               angles,
-                              simulator=cirq.google.XmonSimulator(),
+                              simulator=cirq.Simulator(),
                               repetitions=1000):
         """Returns the objective function as computed by the PDIP Test
         for the input angles in the ansatz."""
@@ -810,7 +816,7 @@ class VQSD:
         return ov / self._num_qubits
 
     def obj_pdip(self,
-                 simulator=cirq.google.XmonSimulator(),
+                 simulator=cirq.Simulator(),
                  repetitions=1000):
         """Returns the purity of the state - the overlap as computed by the
         PDIP Test.
@@ -823,7 +829,7 @@ class VQSD:
     
     def obj_pdip_resolved(self,
                           angles,
-                          simulator=cirq.google.XmonSimulator(),
+                          simulator=cirq.Simulator(),
                           repetitions=1000):
         """Returns the purity of the state - the overlap as computed by the
         PDIP Test for the input angles in the ansatz.
@@ -859,7 +865,7 @@ class VQSD:
         return np.array(mask)
 
     def compute_purity(self,
-                       simulator=cirq.google.XmonSimulator(),
+                       simulator=cirq.Simulator(),
                        repetitions=10000):
         """Computes and returns the (approximate) purity of the state."""
         # get the circuit without the diagonalizing unitary
@@ -912,15 +918,15 @@ def vqsd_to_min(param_array):
     return param_array.flatten()
 
 def symbol_list(num_qubits, num_layers):
-    """Returns a list of cirq.Symbol's for the diagonalizing unitary."""
+    """Returns a list of sympy.Symbol's for the diagonalizing unitary."""
     return np.array(
-        [cirq.Symbol(str(ii)) for ii in range(12 * (num_qubits // 2) * num_layers)]
+        [sympy.Symbol(str(ii)) for ii in range(12 * (num_qubits // 2) * num_layers)]
         )
 
 def symbol_list_for_product(num_qubits):
-    """Returns a list of cirq.Symbol's for a product state ansatz."""
+    """Returns a list of sympy.Symbol's for a product state ansatz."""
     return np.array(
-        [cirq.Symbol(str(ii)) for ii in range(num_qubits)]
+        [sympy.Symbol(str(ii)) for ii in range(num_qubits)]
     )
 
 def get_param_resolver(num_qubits, num_layers):

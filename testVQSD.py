@@ -154,8 +154,8 @@ def test_two_qubit_product_state_identity(
     circ = VQSD(2)
 
     # define the rotations
-    rot = cirq.RotXGate(half_turns=half_turn)
-    rotdag = cirq.RotXGate(half_turns=-half_turn)
+    rot = cirq.rx(half_turn)
+    rotdag = cirq.rx(-half_turn)
 
     # add the state preperation
     circ.state_prep_circ.append(
@@ -379,7 +379,8 @@ def test_get_mask_for_all_zero_outcome(n=4, verbose=False):
         print(circ.algorithm())
     
     # simulate and measure
-    sim = cirq.google.XmonSimulator()
+    #sim = cirq.google.XmonSimulator()
+    sim = cirq.Simulator()
     res = sim.run(circ.algorithm(), repetitions=100)
     
     # split the measurements
@@ -414,7 +415,8 @@ def test_get_mask_for_all_zero_outcome2(n=4, verbose=False):
         print(circ.algorithm())
     
     # simulate and measure
-    sim = cirq.google.XmonSimulator()
+    #sim = cirq.google.XmonSimulator()
+    sim = cirq.Simulator()
     res = sim.run(circ.algorithm(), repetitions=100)
     
     # split the measurements
