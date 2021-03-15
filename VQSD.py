@@ -164,7 +164,7 @@ class VQSD:
 
             # get the layer
             for ii in range(nqubits):
-                rot = gate(angles[ii])
+                rot = gate(np.pi*angles[ii])
                 yield rot(self.qubits[2 * nqubits * copy + ii])
 
         # append the rotation layers
@@ -219,7 +219,7 @@ class VQSD:
         n = self._num_qubits
 
         for ii in range(len(angles)):
-            gate = rot_gate(half_turns=angles[ii])
+            gate = rot_gate(np.pi*angles[ii])
             self.state_prep_circ.append(
                 [gate(self.qubits[ii]), gate(self.qubits[ii + 2 * n])],
                 strategy=cirq.InsertStrategy.EARLIEST
@@ -240,7 +240,7 @@ class VQSD:
         n = self._num_qubits
         
         for ii in range(len(params)):
-            g = gate(half_turns=params[ii])
+            g = gate(np.pi*params[ii])
             self.unitary_circ.append(
                 [g(self.qubits[ii]), g(self.qubits[ii + 2 * n])],
                 strategy=cirq.InsertStrategy.EARLIEST
@@ -428,9 +428,9 @@ class VQSD:
         Note that order is reversed when put into the circuit. The circuit is:
         |qubit>---Rx(params[0])---Ry(params[1])---Rz(params[2])---
         """
-        rx = cirq.rx(params[0])
-        ry = cirq.ry(params[1])
-        rz = cirq.rz(params[2])
+        rx = cirq.rx(np.pi*params[0])
+        ry = cirq.ry(np.pi*params[1])
+        rz = cirq.rz(np.pi*params[2])
 
         yield (rx(qubit), ry(qubit), rz(qubit))
 

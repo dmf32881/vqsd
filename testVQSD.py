@@ -154,8 +154,8 @@ def test_two_qubit_product_state_identity(
     circ = VQSD(2)
 
     # define the rotations
-    rot = cirq.rx(half_turn)
-    rotdag = cirq.rx(-half_turn)
+    rot = cirq.rx(np.pi*half_turn)
+    rotdag = cirq.rx(-1*np.pi*half_turn)
 
     # add the state preperation
     circ.state_prep_circ.append(

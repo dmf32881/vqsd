@@ -55,11 +55,11 @@ if __name__ == "__main__":
     sprep_angles = np.random.rand(n)
     
     # Add the state prep circuit and compute the purity
-    vqsd.product_state_prep(sprep_angles, cirq.RotXGate)
+    vqsd.product_state_prep(sprep_angles, cirq.rx)
     vqsd.compute_purity()
     
     # Add the ansatz
-    vqsd.product_ansatz(symbol_list_for_product(n), cirq.RotXGate)
+    vqsd.product_ansatz(symbol_list_for_product(n), cirq.rx)
     
     # Objective function for Dip Test
     def objdip(angs):
