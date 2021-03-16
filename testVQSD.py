@@ -11,7 +11,7 @@ import time
 import cirq
 import numpy as np
 
-from VQSD import VQSD, min_to_vqsd, vqsd_to_min, symbol_list
+from src.VQSD import VQSD, min_to_vqsd, vqsd_to_min, symbol_list
 
 # =============================================================================
 # constants

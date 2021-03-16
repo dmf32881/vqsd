@@ -1,26 +1,10 @@
 """VQSD.py
 
 Contains a class for VQSD circuits utilizing Cirq.
-"""
 
-# =============================================================================
-# imports
-# =============================================================================
+USAGE:
 
-import cirq, sympy
-import numpy as np
-
-# =============================================================================
-# VQSD class
-# =============================================================================
-
-class VQSD:
-    # =========================================================================
-    # init method
-    # =========================================================================
-
-    def __init__(self, num_qubits, measure_key='z'):
-        """Initializes a VQSD circuit.
+        Initializes a VQSD circuit.
 
         input:
             num_qubits [type: int]
@@ -46,10 +30,15 @@ class VQSD:
                 the purity of the state being diagonalized
                 once the circuit is formed, purity can be computed using the
                 method self.compute_purity
-        """
-        # set the number of qubits and get some qubits
-        # TODO: add option for mixed/pure state
-        # for pure, only need 2 * num_qubits
+"""
+
+import cirq, sympy
+import numpy as np
+from src.common import *
+
+class VQSD:
+
+    def __init__(self, num_qubits, measure_key='z'):
         self._num_qubits = num_qubits
         self._total_num_qubits = 4 * self._num_qubits
         self.qubits = [cirq.LineQubit(ii)
@@ -67,9 +56,9 @@ class VQSD:
         # initialize the purity of the state
         self.purity = None
 
-    # =========================================================================
-    # getter methods
-    # =========================================================================
+    def __str__(self):
+        """Returns the VQSD circuit's algorithm."""
+        return self.algorithm().to_text_diagram()
 
     def get_num_qubits(self):
         """Returns the number of qubits in the circuit."""
@@ -123,65 +112,18 @@ class VQSD:
         assert len(prep_angles) == 3
         assert len(prep_angles[0]) == self._num_qubits
 
-        # =====================================================================
         # do the initial rotation layers
-        # =====================================================================
-
-        def rot_layer(rtype, nqubits, angles, copy=0):
-            """Returns a rotation layer of type 'rtype' on 'nqubits' qubits
-            with angles 'angles'.
-
-            input:
-                rtype ('rotation type') [type: str]
-                    string key 'x' for R_x
-                    string key 'y' for R_y
-                    string key 'z' for R_z
-
-                nqubits [type: int]
-                    number of qubits in layer
-
-                angles [type: list<floats>]
-                    half_turns for each angle in layer
-                    number of angles must be equal to the number of qubits
-
-                copy [type: int (0 or 1, default value = 0)]
-                    copy of the state to act on
-            """
-            # make sure we have the right number of angles
-            assert len(angles) == nqubits
-
-            # get the type of rotation gate
-            if rtype.lower() == 'x':
-                gate = cirq.rx
-            elif rtype.lower() == 'y':
-                gate = cirq.ry
-            elif rtype.lower() == 'z':
-                gate = cirq.rz
-            else:
-                raise ValueError(
-                    "unsupported rotation type. please enter x, y, or z"
-                    )
-
-            # get the layer
-            for ii in range(nqubits):
-                rot = gate(np.pi*angles[ii])
-                yield rot(self.qubits[2 * nqubits * copy + ii])
-
-        # append the rotation layers
         keylist = ['x', 'y', 'z']
         for (index, key) in enumerate(keylist):
             self.state_prep_circ.append(
-                rot_layer(key,
+                self.rot_layer(key,
                           self._num_qubits,
                           prep_angles[index],
                           copy),
                 strategy=cirq.InsertStrategy.EARLIEST
                 )
 
-        # =====================================================================
         # do the cnot gates
-        # =====================================================================
-
         for ii in range(self._num_qubits):
             ii += 2 * self._num_qubits * copy
             self.state_prep_circ.append(
@@ -190,14 +132,45 @@ class VQSD:
                 strategy=cirq.InsertStrategy.EARLIEST
                 )
 
-        # =====================================================================
-        # do the global rotations
-        # =====================================================================
-
-        # not sure if this is possible in cirq
-        # TODO: figure this out
-        # if global rotations are not possible, implement some 'standard form'
-        # ask Arkin about this
+    def rot_layer(self, rtype, nqubits, angles, copy=0):
+        """Returns a rotation layer of type 'rtype' on 'nqubits' qubits
+        with angles 'angles'.
+    
+        input:
+            rtype ('rotation type') [type: str]
+                string key 'x' for R_x
+                string key 'y' for R_y
+                string key 'z' for R_z
+    
+            nqubits [type: int]
+                number of qubits in layer
+    
+            angles [type: list<floats>]
+                half_turns for each angle in layer
+                number of angles must be equal to the number of qubits
+    
+            copy [type: int (0 or 1, default value = 0)]
+                copy of the state to act on
+        """
+        # make sure we have the right number of angles
+        assert len(angles) == nqubits
+    
+        # get the type of rotation gate
+        if rtype.lower() == 'x':
+            gate = cirq.rx
+        elif rtype.lower() == 'y':
+            gate = cirq.ry
+        elif rtype.lower() == 'z':
+            gate = cirq.rz
+        else:
+            raise ValueError(
+                "unsupported rotation type. please enter x, y, or z"
+                )
+    
+        # get the layer
+        for ii in range(nqubits):
+            rot = gate(np.pi*angles[ii])
+            yield rot(self.qubits[2 * nqubits * copy + ii])
 
     def product_state_prep(self, angles, rot_gate):
         """Adds a state preparation circuit of single qubit rotations.
@@ -246,31 +219,31 @@ class VQSD:
                 strategy=cirq.InsertStrategy.EARLIEST
             )
     
-    def unitary(self, num_layers, params, shifted_params, copy):
-        """Adds the diagonalizing unitary to self.unitary_circ.
+    #def unitary(self, num_layers, params, shifted_params, copy):
+    #    """Adds the diagonalizing unitary to self.unitary_circ.
 
-        input:
-            num_layers [type: int]
-                number of layers to implement in the diagonalizing unitary.
+    #    input:
+    #        num_layers [type: int]
+    #            number of layers to implement in the diagonalizing unitary.
 
-            params [type: list<list<list<float>>>]
-                parameters for every layer of gates
-                the format of params is as follows:
+    #        params [type: list<list<list<float>>>]
+    #            parameters for every layer of gates
+    #            the format of params is as follows:
 
-                params = [[rotations for first layer],
-                          [rotations for second layer],
-                          ...,
-                          [rotations for last layer]]
+    #            params = [[rotations for first layer],
+    #                      [rotations for second layer],
+    #                      ...,
+    #                      [rotations for last layer]]
 
-            shifted_params [type: list<list<list<float>>>]
-                parameters for the shifted layers of gates
-                format is the same as the format for params above
+    #        shifted_params [type: list<list<list<float>>>]
+    #            parameters for the shifted layers of gates
+    #            format is the same as the format for params above
 
-            copy [type: int, 0 or 1, default value = 0]
-                the copy of the state to perform the unitary on
-        """
-        # TODO: implement
-        pass
+    #        copy [type: int, 0 or 1, default value = 0]
+    #            the copy of the state to perform the unitary on
+    #    """
+    #    # TODO: implement
+    #    pass
 
     def layer(self, params, shifted_params, copy):
         """Implements a single layer of the diagonalizing unitary.
@@ -890,49 +863,3 @@ class VQSD:
         notation of the VQSD paper.
         """
         # TODO: implement
-
-    # =========================================================================
-    # overrides
-    # =========================================================================
-
-    def __str__(self):
-        """Returns the VQSD circuit's algorithm."""
-        return self.algorithm().to_text_diagram()
-
-
-def min_to_vqsd(param_list, num_qubits=2):
-    """Helper function that converts a linear array of angles (used to call
-    the optimize function) into the format required by VQSD.layer.
-    """
-    # TODO: add this as a member function of VQSD class
-    # error check on input
-    assert len(param_list) % 6 == 0, "invalid number of parameters"
-    return param_list.reshape(num_qubits // 2, 4, 3)
-
-def vqsd_to_min(param_array):
-    """Helper function that converts the array of angles in the format
-    required by VQSD.layer into a linear array of angles (used to call the
-    optimize function).
-    """
-    # TODO: add this as a member function of VQSD class
-    return param_array.flatten()
-
-def symbol_list(num_qubits, num_layers):
-    """Returns a list of sympy.Symbol's for the diagonalizing unitary."""
-    return np.array(
-        [sympy.Symbol(str(ii)) for ii in range(12 * (num_qubits // 2) * num_layers)]
-        )
-
-def symbol_list_for_product(num_qubits):
-    """Returns a list of sympy.Symbol's for a product state ansatz."""
-    return np.array(
-        [sympy.Symbol(str(ii)) for ii in range(num_qubits)]
-    )
-
-def get_param_resolver(num_qubits, num_layers):
-    """Returns a cirq.ParamResolver for the parameterized unitary."""
-    num_angles = 12 * num_qubits * num_layers
-    angs = np.pi * (2 * np.random.rand(num_angles) - 1)
-    return cirq.ParamResolver(
-        {str(ii) : angs[ii] for ii in range(num_angles)}
-    )

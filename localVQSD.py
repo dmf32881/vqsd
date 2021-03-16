@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import cirq
 
-from VQSD import VQSD, symbol_list_for_product
+from src.VQSD import VQSD, symbol_list_for_product
 
 # =============================================================================
 # Constants
